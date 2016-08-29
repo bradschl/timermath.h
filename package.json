@@ -1,0 +1,20 @@
+{
+    "name": "timermath",
+    "description": "C header for dealing with timer rollover math",
+    "repo": "bradschl/timermath.h",
+    "license": "MIT",
+    "version": "0.0.1",
+    "src": [
+        "src/timermath/timermath.h"
+    ],
+    "dependencies": {
+    },
+    "keywords": [
+        "c",
+        "c++",
+        "embedded",
+        "timer",
+        "counter",
+        "rollover"
+  ]
+}
