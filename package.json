@@ -3,7 +3,7 @@
     "description": "C header for dealing with timer rollover math",
     "repo": "bradschl/timermath.h",
     "license": "MIT",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "src": [
         "src/timermath/timermath.h"
     ],
