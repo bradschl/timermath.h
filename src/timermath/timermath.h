@@ -77,7 +77,103 @@ struct tm_math {
 };
 
 
-// ------------------------------------------------------------- Mask operators
+// -------------------------------------------------------- Top level functions
+
+/**
+ * @brief Initializes a timer math structure
+ * @details This must be called before the struct can be used. This will
+ *          determine which math functions can be used for the given maximum
+ *          timer value. The most efficient implementation uses bit masking, so
+ *          maximum values that coincide with (2**n - 1) should be preferred.
+ *          If the maximum timer value does not coincide with an even bit
+ *          boundary, then the slower math functions will be used.
+ *          Note that strange behavior may happen when comparing value at
+ *          exactly ceil(max_value / 2), since that is where (-0) exists.
+ *
+ * @param tm_math Structure to initialize
+ * @param max_value Maximum value that the timer (counter) can hold before
+ *          rolling back to 0
+ */
+static inline void
+tm_initialize(struct tm_math * tm, uint32_t max_value);
+
+/**
+ * @brief Check if (lhs == rhs)
+ *
+ * @param tm_math Math structure
+ * @param lhs left had side of the operator
+ * @param rhs right hand side of the operator
+ */
+static inline bool
+tm_is_eq(struct tm_math * tm, uint32_t lhs, uint32_t rhs);
+
+/**
+ * @brief Check if (lhs < rhs)
+ *
+ * @param tm_math Math structure
+ * @param lhs left had side of the operator
+ * @param rhs right hand side of the operator
+ */
+static inline bool
+tm_is_lt(struct tm_math * tm, uint32_t lhs, uint32_t rhs);
+
+/**
+ * @brief Check if (lhs > rhs)
+ *
+ * @param tm_math Math structure
+ * @param lhs left had side of the operator
+ * @param rhs right hand side of the operator
+ */
+static inline bool
+tm_is_gt(struct tm_math * tm, uint32_t lhs, uint32_t rhs);
+
+/**
+ * @brief Check if (lhs >= rhs)
+ *
+ * @param tm_math Math structure
+ * @param lhs left had side of the operator
+ * @param rhs right hand side of the operator
+ */
+static inline bool
+tm_is_ge(struct tm_math * tm, uint32_t lhs, uint32_t rhs);
+
+/**
+ * @brief Check if (lhs <= rhs)
+ *
+ * @param tm_math Math structure
+ * @param lhs left had side of the operator
+ * @param rhs right hand side of the operator
+ */
+static inline bool
+tm_is_le(struct tm_math * tm, uint32_t lhs, uint32_t rhs);
+
+/**
+ * @brief Gets the difference between two timer values, performing
+ * @details This performs (lhs - rhs) with roll over math
+ *
+ * @param tm_math Math structure
+ * @param lhs left had side of the operator
+ * @param rhs right hand side of the operator
+ */
+static inline int32_t
+tm_get_diff(struct tm_math * tm, uint32_t lhs, uint32_t rhs);
+
+/**
+ * @brief Offsets the given timer value by a positive or negative offset
+ * @details This performs (t + offset) with roll over math
+ *
+ * @param tm_math Math structure
+ * @param t Timer value
+ * @param offset Positive or negative offset to apply
+ */
+static inline uint32_t
+tm_offset(struct tm_math * tm, uint32_t t, int32_t offset);
+
+
+// ------------------------------------------------------------- Implementation
+
+
+// --------------------- Mask operators
 
 static inline bool
 _tm_mask_lt(uint32_t lhs, uint32_t rhs, uint32_t max_value)
@@ -115,7 +211,7 @@ _tm_mask_offset(uint32_t t, int32_t offset, uint32_t max_value)
 }
 
 
-// --------------------------------------------------------- Non-mask operators
+// ----------------- Non-mask operators
 
 static inline bool
 _tm_nm_lt(uint32_t lhs, uint32_t rhs, uint32_t max_value)
@@ -202,25 +298,8 @@ _tm_nm_offset(uint32_t t, int32_t offset, uint32_t max_value)
 }
 
 
+// ---------------- Top level functions
 
-// ---------------------------------------------------------- Primary functions
-
-
-/**
- * @brief Initializes a timer math structure
- * @details This must be called before the struct can be used. This will
- *          determine which math functions can be used for the given maximum
- *          timer value. The most efficient implementation uses bit masking, so
- *          maximum values that coincide with (2**n - 1) should be preferred.
- *          If the maximum timer value does not coincide with an even bit
- *          boundary, then the slower math functions will be used.
- *          Note that strange behavior may happen when comparing value at
- *          exactly ceil(max_value / 2), since that is where (-0) exists.
- *
- * @param tm_math Structure to initialize
- * @param max_value Maximum value that the timer (counter) can hold before
- *          rolling back to 0
- */
 static inline void
 tm_initialize(struct tm_math * tm, uint32_t max_value)
 {
@@ -234,13 +313,11 @@ tm_initialize(struct tm_math * tm, uint32_t max_value)
     }
 
     if(ones < 2) {
-        // power of 2 maskable
         tm->eq = _tm_mask_eq;
         tm->lt = _tm_mask_lt;
         tm->diff = _tm_mask_diff;
         tm->offset = _tm_mask_offset;
     } else {
-        // This is why we can't have nice things
         tm->eq = _tm_nm_eq;
         tm->lt = _tm_nm_lt;
         tm->diff = _tm_nm_diff;
@@ -248,93 +325,42 @@ tm_initialize(struct tm_math * tm, uint32_t max_value)
     }
 }
 
-/**
- * @brief Check if (lhs == rhs)
- *
- * @param tm_math Math structure
- * @param lhs left had side of the operator
- * @param rhs right hand side of the operator
- */
 static inline bool
 tm_is_eq(struct tm_math * tm, uint32_t lhs, uint32_t rhs)
 {
     return tm->eq(lhs, rhs, tm->max_value);
 }
 
-/**
- * @brief Check if (lhs < rhs)
- *
- * @param tm_math Math structure
- * @param lhs left had side of the operator
- * @param rhs right hand side of the operator
- */
 static inline bool
 tm_is_lt(struct tm_math * tm, uint32_t lhs, uint32_t rhs)
 {
     return tm->lt(lhs, rhs, tm->max_value);
 }
 
-/**
- * @brief Check if (lhs > rhs)
- *
- * @param tm_math Math structure
- * @param lhs left had side of the operator
- * @param rhs right hand side of the operator
- */
 static inline bool
 tm_is_gt(struct tm_math * tm, uint32_t lhs, uint32_t rhs)
 {
     return tm->lt(rhs, lhs, tm->max_value);
 }
 
-/**
- * @brief Check if (lhs >= rhs)
- *
- * @param tm_math Math structure
- * @param lhs left had side of the operator
- * @param rhs right hand side of the operator
- */
 static inline bool
 tm_is_ge(struct tm_math * tm, uint32_t lhs, uint32_t rhs)
 {
     return !tm->lt(lhs, rhs, tm->max_value);
 }
 
-/**
- * @brief Check if (lhs <= rhs)
- *
- * @param tm_math Math structure
- * @param lhs left had side of the operator
- * @param rhs right hand side of the operator
- */
 static inline bool
 tm_is_le(struct tm_math * tm, uint32_t lhs, uint32_t rhs)
 {
     return tm->eq(lhs, rhs, tm->max_value) || tm->lt(lhs, rhs, tm->max_value);
 }
 
-/**
- * @brief Gets the difference between two timer values, performing
- * @details This performs (lhs - rhs) with roll over math
- *
- * @param tm_math Math structure
- * @param lhs left had side of the operator
- * @param rhs right hand side of the operator
- */
 static inline int32_t
 tm_get_diff(struct tm_math * tm, uint32_t lhs, uint32_t rhs)
 {
     return tm->diff(lhs, rhs, tm->max_value);
 }
 
-/**
- * @brief Offsets the given timer value by a positive or negative offset
- * @details This performs (t + offset) with roll over math
- *
- * @param tm_math Math structure
- * @param t Timer value
- * @param offset Positive or negative offset to apply
- */
 static inline uint32_t
 tm_offset(struct tm_math * tm, uint32_t t, int32_t offset)
 {
