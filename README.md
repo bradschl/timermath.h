@@ -11,7 +11,6 @@ $ clib install bradschl/timermath.h
 ```
 
 ## Example
-TODO:
 ```C
  /**
   * For a 3 bit timer that starts at 0 and increments to 7
